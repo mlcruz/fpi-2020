@@ -1,17 +1,14 @@
-use std::{collections::HashMap, path::Path};
-
 use druid::widget::prelude::*;
-use druid::widget::{Flex, SizedBox, WidgetExt};
-use druid::{AppLauncher, Color, Data, Lens, WindowDesc};
-use fpi::{AppState, Rebuilder, ToDruidImage};
+use druid::{AppLauncher, WindowDesc};
+use fpi::{AppState, UiBuilder};
 
 fn make_ui() -> impl Widget<AppState> {
-    Flex::column().with_flex_child(Rebuilder::new().center(), 1.0)
+    UiBuilder::new()
 }
 
 pub fn main() {
     let main_window = WindowDesc::new(|| make_ui())
-        .window_size((650., 450.))
+        .window_size((800., 600.))
         .title("Flex Container Options");
 
     let state = AppState {

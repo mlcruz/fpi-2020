@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use druid::{
     widget::{Button, Flex},
@@ -54,23 +54,23 @@ impl AppState {
     }
 }
 
-pub struct Rebuilder {
+pub struct UiBuilder {
     inner: Box<dyn Widget<AppState>>,
 }
 
-impl Rebuilder {
-    pub fn new() -> Rebuilder {
-        Rebuilder {
-            inner: SizedBox::empty().boxed(),
+impl UiBuilder {
+    pub fn new() -> UiBuilder {
+        UiBuilder {
+            inner: Flex::column().boxed(),
         }
     }
 
     fn rebuild_inner(&mut self, data: &AppState) {
-        self.inner = build_widget(&data);
+        self.inner = build_app_ui(&data);
     }
 }
 
-impl Widget<AppState> for Rebuilder {
+impl Widget<AppState> for UiBuilder {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut AppState, env: &Env) {
         self.inner.event(ctx, event, data, env)
     }
@@ -109,51 +109,69 @@ impl Widget<AppState> for Rebuilder {
 }
 
 fn build_image_list() -> impl Widget<AppState> {
-    let mut col = Flex::column();
-
     let image_folder_path = Path::new(&std::env::current_dir().unwrap())
         .to_path_buf()
         .join("src/images/1/");
 
+    let mut row = Flex::row();
     for image_path in std::fs::read_dir(image_folder_path).unwrap() {
         let image_path = image_path.unwrap();
 
         let path_str = image_path.file_name().to_str().unwrap().to_owned();
 
-        let mut row = Flex::row();
         let label = path_str.clone();
         let btn = Button::new(label.clone())
             .on_click(move |_ctx, data: &mut AppState, _env| {
                 data.selected_image = label.clone().into()
             })
-            .fix_width(250.0);
+            .fix_height(100.0);
 
-        row.add_flex_child(btn, 1.0);
-        col.add_flex_child(row, 1.0);
+        let mut inner_col = Flex::column();
+        inner_col.add_flex_child(btn, 1.0);
+        row.add_flex_child(inner_col, 1.0);
     }
 
-    col
+    row
 }
 
-pub fn build_widget(state: &AppState) -> Box<dyn Widget<AppState>> {
+pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
     let mut col = Flex::column();
-    let mut row = Flex::row();
 
+    col.set_main_axis_alignment(druid::widget::MainAxisAlignment::Start);
+
+    let mut image_row = Flex::row();
     let image_folder_path = Path::new(&std::env::current_dir().unwrap())
         .to_path_buf()
         .join("src/images/1/");
 
     if let Some(image_path) = state.selected_image.clone() {
-        let image = image::open(image_folder_path.join(image_path)).unwrap();
-        let img = image.to_druid_image();
-        let sized = SizedBox::new(img).border(Color::grey(0.6), 2.0).center();
+        let selected_image = image::open(image_folder_path.join(image_path)).unwrap();
 
-        row.add_flex_child(sized, 1.0);
+        let (width, height) = get_dimensions(&selected_image);
+
+        let make_sized = |inner: &DynamicImage| {
+            SizedBox::new(
+                inner
+                    .to_druid_image()
+                    .fill_mode(druid::widget::FillStrat::Cover),
+            )
+            .fix_width(width as f64)
+            .fix_height(height as f64)
+            .border(Color::grey(0.6), 2.0)
+        };
+
+        let original_image = make_sized(&selected_image);
+
+        image_row.add_flex_child(original_image, 1.0);
+
+        match state.selected_operation {
+            Operation::FlipH => image_row.add_flex_child(make_sized(&selected_image.fliph()), 1.0),
+            Operation::FlipV => image_row.add_flex_child(make_sized(&selected_image.flipv()), 1.0),
+        }
     };
+    col.add_flex_child(build_image_list(), 1.0);
 
-    let image_list = build_image_list();
-    col.add_flex_child(image_list, 1.0);
-    col.add_flex_child(row, 1.0);
+    col.add_flex_child(image_row, 3.0);
     col.boxed()
 }
 
@@ -179,4 +197,12 @@ mod tests {
 
         Ok(())
     }
+}
+
+pub fn get_dimensions(img: &DynamicImage) -> (u32, u32) {
+    let (ax, ay, bx, by) = img.bounds();
+    let width = bx - ax;
+    let height = by - ay;
+
+    (width, height)
 }
