@@ -2,42 +2,18 @@ use std::path::Path;
 
 use druid::{
     widget::{Button, Flex},
-    Color,
+    Color, Insets,
 };
+use imageops::Operation;
 
+use crate::imageops::*;
 use druid::{
-    piet::ImageFormat,
-    widget::{Image, SizedBox},
-    BoxConstraints, Data, Env, Event, EventCtx, ImageBuf, LayoutCtx, Lens, LifeCycle, LifeCycleCtx,
-    PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetId,
+    widget::SizedBox, BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, Lens, LifeCycle,
+    LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetId,
 };
-use image::{DynamicImage, GenericImageView};
-#[derive(Debug, Data, Clone, Copy, PartialEq, Eq)]
-pub enum Operation {
-    FlipH,
-    FlipV,
-}
+use image::DynamicImage;
 
-pub trait ToDruidImage {
-    fn to_druid_image(&self) -> Image;
-}
-
-impl ToDruidImage for DynamicImage {
-    fn to_druid_image(&self) -> Image {
-        let (ax, ay, bx, by) = self.bounds();
-        let width = bx - ax;
-        let height = by - ay;
-
-        let pixels = self.as_bytes();
-
-        Image::new(ImageBuf::from_raw(
-            pixels,
-            ImageFormat::Rgb,
-            width as usize,
-            height as usize,
-        ))
-    }
-}
+pub mod imageops;
 
 #[derive(Debug, Data, Clone, Lens)]
 pub struct AppState {
@@ -108,6 +84,32 @@ impl Widget<AppState> for UiBuilder {
     }
 }
 
+fn build_operation_list() -> impl Widget<AppState> {
+    let mut col = Flex::column();
+    let mut row = Flex::row();
+
+    let build_op_btn = |text, op| {
+        Button::new(text).on_click(move |_ctx, data: &mut AppState, _env| {
+            data.selected_operation = op;
+        })
+    };
+
+    row.add_flex_child(build_op_btn("Espelhamento Vertical", Operation::FlipV), 1.0);
+    row.add_flex_child(
+        build_op_btn("Espelhamento Horizontal", Operation::FlipH),
+        1.0,
+    );
+    row.add_flex_child(build_op_btn("Grayscale", Operation::Grayscale), 1.0);
+
+    col.add_flex_child(row, 1.0);
+    col.add_flex_child(
+        Flex::row().with_flex_child(build_op_btn("Salvar", Operation::Save), 1.0),
+        1.0,
+    );
+
+    col
+}
+
 fn build_image_list() -> impl Widget<AppState> {
     let image_folder_path = Path::new(&std::env::current_dir().unwrap())
         .to_path_buf()
@@ -147,7 +149,7 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
     if let Some(image_path) = state.selected_image.clone() {
         let selected_image = image::open(image_folder_path.join(image_path)).unwrap();
 
-        let (width, height) = get_dimensions(&selected_image);
+        let (width, height) = selected_image.get_dimensions();
 
         let make_sized = |inner: &DynamicImage| {
             SizedBox::new(
@@ -158,6 +160,7 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
             .fix_width(width as f64)
             .fix_height(height as f64)
             .border(Color::grey(0.6), 2.0)
+            .padding(Insets::uniform(10.0))
         };
 
         let original_image = make_sized(&selected_image);
@@ -165,13 +168,17 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
         image_row.add_flex_child(original_image, 1.0);
 
         match state.selected_operation {
-            Operation::FlipH => image_row.add_flex_child(make_sized(&selected_image.fliph()), 1.0),
-            Operation::FlipV => image_row.add_flex_child(make_sized(&selected_image.flipv()), 1.0),
+            Operation::FlipH => image_row.add_flex_child(make_sized(&selected_image.flip_h()), 1.0),
+            Operation::FlipV => image_row.add_flex_child(make_sized(&selected_image.flip_v()), 1.0),
+            Operation::Save => {}
+            Operation::Grayscale => {
+                image_row.add_flex_child(make_sized(&selected_image.to_grayscale()), 1.0)
+            }
         }
     };
     col.add_flex_child(build_image_list(), 1.0);
-
-    col.add_flex_child(image_row, 3.0);
+    col.add_flex_child(build_operation_list(), 1.0);
+    col.add_flex_child(image_row, 4.0);
     col.boxed()
 }
 
@@ -197,12 +204,4 @@ mod tests {
 
         Ok(())
     }
-}
-
-pub fn get_dimensions(img: &DynamicImage) -> (u32, u32) {
-    let (ax, ay, bx, by) = img.bounds();
-    let width = bx - ax;
-    let height = by - ay;
-
-    (width, height)
 }
