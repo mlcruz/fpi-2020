@@ -1,9 +1,6 @@
-use std::mem::swap;
-
 use druid::{piet::ImageFormat, widget::Image, Data, ImageBuf};
 use image::{
-    DynamicImage, EncodableLayout, GenericImage, GenericImageView, GrayImage, ImageBuffer, Luma,
-    RgbImage, Rgba,
+    DynamicImage, EncodableLayout, GenericImage, GenericImageView, GrayImage, Luma, RgbImage, Rgba,
 };
 
 pub trait ImageExt {
@@ -88,9 +85,53 @@ impl ImageExt for DynamicImage {
     }
 
     fn quantize_grayscale(&self, qty: u8) -> DynamicImage {
-        let grayscale = self.to_grayscale().as_luma8();
+        let (width, height) = self.get_dimensions();
+        let mut grayscale = self.to_grayscale().as_luma8().unwrap().clone().into_raw();
+        let len = grayscale.len();
+        let (min, max) = {
+            let mut tmp_max = 0;
+            let mut tmp_min = 255;
+            for l in &grayscale {
+                if l < &tmp_min {
+                    tmp_min = *l;
+                };
 
-        todo!()
+                if l > &tmp_max {
+                    tmp_max = *l;
+                };
+            }
+
+            (tmp_min, tmp_max)
+        };
+
+        let interval_size = max - min + 1;
+
+        if qty > interval_size {
+            return self.to_grayscale_rgb();
+        }
+
+        let bin_size = interval_size / qty;
+
+        // qty 64
+        // min 64
+        // max 196
+        // interval = 128
+        // bin size = 2
+        // (64 - min) / 2 -> 0
+        // (65 - min ) / 2 -> 0
+        // (66 - min ) / 2 -> 1
+        // ...
+        // (196 - min) / 2 -> 64
+        for idx in 0..len {
+            // 255
+            let l = grayscale[idx];
+            let bin_idx = (l - min) / bin_size;
+
+            let bin_value = min + (bin_idx * bin_size);
+            grayscale[idx] = bin_value;
+        }
+
+        DynamicImage::ImageLuma8(GrayImage::from_raw(width, height, grayscale).unwrap())
     }
 }
 
