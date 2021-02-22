@@ -14,6 +14,7 @@ pub fn main() {
     let state = AppState {
         selected_image: "Gramado_22k.jpg".to_owned().into(),
         selected_operation: Operation::FlipV,
+        qty: 64.0,
     };
 
     AppLauncher::with_window(main_window)

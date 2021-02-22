@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use druid::{
-    widget::{Button, Flex},
+    widget::{Button, Flex, Label, Slider},
     Color, Insets,
 };
 use imageops::Operation;
@@ -19,6 +19,7 @@ pub mod imageops;
 pub struct AppState {
     pub selected_image: Option<String>,
     pub selected_operation: Operation,
+    pub qty: f64,
 }
 
 impl AppState {
@@ -26,6 +27,7 @@ impl AppState {
         Self {
             selected_image: None,
             selected_operation: Operation::FlipH,
+            qty: 64.0,
         }
     }
 }
@@ -101,7 +103,29 @@ fn build_operation_list() -> impl Widget<AppState> {
     );
     row.add_flex_child(build_op_btn("Grayscale", Operation::Grayscale), 1.0);
 
+    let mut qty_row = Flex::row();
+
+    let qry_slider = Flex::column()
+        .with_flex_child(Slider::new().with_range(0.0, 255.0), 1.0)
+        .fix_size(150.0, 50.0)
+        .lens(AppState::qty);
+
+    qty_row.add_flex_child(Flex::column().with_flex_child(qry_slider, 1.0), 1.0);
+    qty_row.add_flex_child(
+        Flex::column().with_flex_child(
+            Label::new(|data: &AppState, _: &_| format!("Tons {}", data.qty as usize)),
+            1.0,
+        ),
+        1.0,
+    );
+    qty_row.add_flex_child(
+        Flex::column().with_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0),
+        1.0,
+    );
+
     col.add_flex_child(row, 1.0);
+    col.add_default_spacer();
+    col.add_flex_child(qty_row, 1.0);
     col.add_flex_child(
         Flex::row().with_flex_child(build_op_btn("Salvar", Operation::Save), 1.0),
         1.0,
@@ -174,6 +198,10 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
             Operation::Grayscale => {
                 image_row.add_flex_child(make_sized(&selected_image.to_grayscale_rgb()), 1.0)
             }
+            Operation::Quantize => image_row.add_flex_child(
+                make_sized(&selected_image.quantize_grayscale(state.qty as u8)),
+                1.0,
+            ),
         }
     };
     col.add_flex_child(build_image_list(), 1.0);

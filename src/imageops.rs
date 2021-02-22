@@ -100,6 +100,7 @@ pub enum Operation {
     FlipV,
     Save,
     Grayscale,
+    Quantize,
 }
 
 pub trait ToDruidImage {
