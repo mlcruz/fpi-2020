@@ -106,8 +106,10 @@ fn build_operation_list() -> impl Widget<AppState> {
     let mut qty_row = Flex::row();
 
     let qry_slider = Flex::column()
-        .with_flex_child(Slider::new().with_range(0.0, 255.0), 1.0)
-        .fix_size(150.0, 50.0)
+        .with_flex_child(
+            Slider::new().with_range(1.0, 255.0).fix_size(200.0, 50.0),
+            1.0,
+        )
         .lens(AppState::qty);
 
     qty_row.add_flex_child(Flex::column().with_flex_child(qry_slider, 1.0), 1.0);
@@ -181,8 +183,8 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
                     .to_druid_image()
                     .fill_mode(druid::widget::FillStrat::Cover),
             )
-            .fix_width(width as f64)
-            .fix_height(height as f64)
+            .fix_width(width as f64 * 1.5)
+            .fix_height(height as f64 * 1.5)
             .border(Color::grey(0.6), 2.0)
             .padding(Insets::uniform(10.0))
         };
