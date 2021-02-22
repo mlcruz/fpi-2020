@@ -15,6 +15,7 @@ pub fn main() {
         selected_image: "Gramado_22k.jpg".to_owned().into(),
         selected_operation: Operation::FlipV,
         qty: 64.0,
+        last_operation: Operation::FlipH,
     };
 
     AppLauncher::with_window(main_window)

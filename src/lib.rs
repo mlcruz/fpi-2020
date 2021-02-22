@@ -19,6 +19,7 @@ pub mod imageops;
 pub struct AppState {
     pub selected_image: Option<String>,
     pub selected_operation: Operation,
+    pub last_operation: Operation,
     pub qty: f64,
 }
 
@@ -28,6 +29,7 @@ impl AppState {
             selected_image: None,
             selected_operation: Operation::FlipH,
             qty: 64.0,
+            last_operation: Operation::FlipH,
         }
     }
 }
@@ -92,6 +94,10 @@ fn build_operation_list() -> impl Widget<AppState> {
 
     let build_op_btn = |text, op| {
         Button::new(text).on_click(move |_ctx, data: &mut AppState, _env| {
+            if data.selected_operation != Operation::Save {
+                data.last_operation = data.selected_operation;
+            }
+
             data.selected_operation = op;
         })
     };
@@ -193,23 +199,72 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
 
         image_row.add_flex_child(original_image, 1.0);
 
-        match state.selected_operation {
-            Operation::FlipH => image_row.add_flex_child(make_sized(&selected_image.flip_h()), 1.0),
-            Operation::FlipV => image_row.add_flex_child(make_sized(&selected_image.flip_v()), 1.0),
-            Operation::Save => {}
-            Operation::Grayscale => {
-                image_row.add_flex_child(make_sized(&selected_image.to_grayscale_rgb()), 1.0)
-            }
-            Operation::Quantize => image_row.add_flex_child(
-                make_sized(&selected_image.quantize_grayscale(state.qty as u8)),
-                1.0,
-            ),
-        }
+        image_row.add_flex_child(exec_op(&selected_image, state), 1.0)
     };
     col.add_flex_child(build_image_list(), 1.0);
     col.add_flex_child(build_operation_list(), 1.0);
     col.add_flex_child(image_row, 4.0);
     col.boxed()
+}
+
+pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
+    let (width, height) = image.get_dimensions();
+
+    let make_sized = |inner: &DynamicImage| {
+        SizedBox::new(
+            inner
+                .to_druid_image()
+                .fill_mode(druid::widget::FillStrat::Cover),
+        )
+        .fix_width(width as f64 * 1.5)
+        .fix_height(height as f64 * 1.5)
+        .border(Color::grey(0.6), 2.0)
+        .padding(Insets::uniform(10.0))
+    };
+
+    let result = match state.selected_operation {
+        Operation::FlipH => make_sized(&image.flip_h()),
+        Operation::FlipV => make_sized(&image.flip_v()),
+        Operation::Save => {
+            let display = match state.last_operation {
+                Operation::FlipH => make_sized(&image.flip_h()),
+                Operation::FlipV => make_sized(&image.flip_v()),
+                Operation::Save => panic!(),
+                Operation::Grayscale => make_sized(&image.to_grayscale_rgb()),
+                Operation::Quantize => make_sized(&image.quantize_grayscale(state.qty as u8)),
+            };
+
+            let result_path = Path::new(&std::env::current_dir().unwrap())
+                .to_path_buf()
+                .join("src/result_images");
+
+            let selected = state.selected_image.clone().unwrap();
+            let image_name = Path::new(&selected).file_name().unwrap().to_str().unwrap();
+
+            let format_save = |op| result_path.join(format!("{}-{}.jpg", op, image_name));
+            match state.last_operation {
+                Operation::FlipH => &image.flip_h().save(format_save("flip_h")).unwrap(),
+                Operation::FlipV => &image.flip_v().save(format_save("flip_v")).unwrap(),
+                Operation::Save => {
+                    panic!();
+                }
+                Operation::Grayscale => &image
+                    .to_grayscale_rgb()
+                    .save(format_save("grayscale"))
+                    .unwrap(),
+                Operation::Quantize => &image
+                    .quantize_grayscale(state.qty as u8)
+                    .save(format_save(&format!("quantize-{}", state.qty as u8)))
+                    .unwrap(),
+            };
+
+            display
+        }
+        Operation::Grayscale => make_sized(&image.to_grayscale_rgb()),
+        Operation::Quantize => make_sized(&image.quantize_grayscale(state.qty as u8)),
+    };
+
+    result
 }
 
 #[cfg(test)]
