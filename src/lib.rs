@@ -186,8 +186,8 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
 mod tests {
     use std::{error::Error, path::Path};
 
+    use crate::imageops::ImageExt;
     use image::{DynamicImage, GenericImage, GenericImageView};
-
     #[test]
     fn read_as_bytes() -> Result<(), Box<dyn Error>> {
         let image_folder_path = Path::new(&std::env::current_dir().unwrap())
@@ -202,6 +202,21 @@ mod tests {
         dbg!(new_img.as_bytes());
         dbg!(new_img.get_pixel(0, 0));
 
+        Ok(())
+    }
+
+    #[test]
+    fn flip_v_naive_eq() -> Result<(), Box<dyn Error>> {
+        let image_folder_path = Path::new(&std::env::current_dir().unwrap())
+            .to_path_buf()
+            .join("src/images/1/");
+
+        let img = image::open(dbg!(image_folder_path.join("Gramado_22k.jpg")))?;
+
+        let flip_v_fast = img.flip_v();
+        let flip_v_naive = img.flipv();
+
+        assert_eq!(flip_v_fast, flip_v_naive);
         Ok(())
     }
 }

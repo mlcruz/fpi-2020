@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use druid::{piet::ImageFormat, widget::Image, Data, ImageBuf};
 use image::{
     DynamicImage, EncodableLayout, GenericImage, GenericImageView, GrayImage, ImageBuffer, Luma,
@@ -13,11 +15,34 @@ pub trait ImageExt {
 
 impl ImageExt for DynamicImage {
     fn flip_v(&self) -> DynamicImage {
-        self.flipv()
+        let mut raw = self.clone().into_bytes();
+
+        let (w, h) = self.dimensions();
+        let stride = (w * 3) as usize;
+        let len = (stride * h as usize / 2) as usize;
+        let slice_h = h as usize / 2;
+
+        let (first, second) = raw.split_at_mut(len);
+
+        for idx in 0..(h as usize / 2) {
+            let mut row_upper = &mut first[idx * stride..(idx + 1) * stride];
+            let row_lower = &mut second[(slice_h - idx - 1) * stride..(slice_h - idx) * stride];
+
+            row_lower.swap_with_slice(&mut row_upper);
+        }
+
+        DynamicImage::ImageRgb8(RgbImage::from_raw(w, h, raw).unwrap())
     }
 
     fn flip_h(&self) -> DynamicImage {
-        self.fliph()
+        let (w, h) = self.dimensions();
+        let mut new_img = DynamicImage::new_rgb8(w, h);
+
+        for (x, y, pixel) in self.pixels() {
+            new_img.put_pixel((w - 1 - x) as u32, y, pixel);
+        }
+
+        new_img
     }
 
     fn to_grayscale(&self) -> DynamicImage {
