@@ -172,7 +172,7 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
             Operation::FlipV => image_row.add_flex_child(make_sized(&selected_image.flip_v()), 1.0),
             Operation::Save => {}
             Operation::Grayscale => {
-                image_row.add_flex_child(make_sized(&selected_image.to_grayscale()), 1.0)
+                image_row.add_flex_child(make_sized(&selected_image.to_grayscale_rgb()), 1.0)
             }
         }
     };

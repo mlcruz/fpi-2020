@@ -3,14 +3,16 @@ use std::mem::swap;
 use druid::{piet::ImageFormat, widget::Image, Data, ImageBuf};
 use image::{
     DynamicImage, EncodableLayout, GenericImage, GenericImageView, GrayImage, ImageBuffer, Luma,
-    RgbImage,
+    RgbImage, Rgba,
 };
 
 pub trait ImageExt {
     fn flip_v(&self) -> DynamicImage;
     fn flip_h(&self) -> DynamicImage;
     fn to_grayscale(&self) -> DynamicImage;
+    fn to_grayscale_rgb(&self) -> DynamicImage;
     fn get_dimensions(&self) -> (u32, u32);
+    fn quantize_grayscale(&self, qty: u8) -> DynamicImage;
 }
 
 impl ImageExt for DynamicImage {
@@ -61,12 +63,34 @@ impl ImageExt for DynamicImage {
         DynamicImage::ImageLuma8(new_img)
     }
 
+    fn to_grayscale_rgb(&self) -> DynamicImage {
+        let (width, height) = self.get_dimensions();
+
+        let mut new_img = DynamicImage::new_rgb8(width, height);
+
+        for (x, y, pixel) in self.pixels() {
+            let new_l = ((0.299 * pixel[0] as f64) as u64
+                + (0.587 * pixel[1] as f64) as u64
+                + (0.114 * pixel[2] as f64) as u64) as u8;
+
+            new_img.put_pixel(x, y, Rgba::from([new_l, new_l, new_l, 1]));
+        }
+
+        new_img
+    }
+
     fn get_dimensions(&self) -> (u32, u32) {
         let (ax, ay, bx, by) = self.bounds();
         let width = bx - ax;
         let height = by - ay;
 
         (width, height)
+    }
+
+    fn quantize_grayscale(&self, qty: u8) -> DynamicImage {
+        let grayscale = self.to_grayscale().as_luma8();
+
+        todo!()
     }
 }
 
