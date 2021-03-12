@@ -1,4 +1,4 @@
-use image::{DynamicImage, GenericImageView};
+use image::{DynamicImage, GenericImageView, GrayImage, Luma};
 
 use crate::imageops::ImageExt;
 
@@ -22,14 +22,14 @@ impl ImageExt2 for DynamicImage {
         let max_val = histogram.iter().max().unwrap();
         let pixel_value = (*max_val as f64) / 255.0;
 
-        let mut result_image: [u8; 256 * 256] = [0; 256 * 256];
+        let mut result_image = GrayImage::from_raw(256, 256, [255; 256 * 256].to_vec()).unwrap();
 
-        for count in &histogram {
+        for (col, count) in histogram.iter().enumerate() {
             let column_height = (*count as f64 / pixel_value).ceil() as u8;
+            dbg!(column_height);
 
-            for idx in 0..column_height {
-                let pixel_location = 255 * (column_height - idx - 1) as usize;
-                result_image[pixel_location] = 1;
+            for row in 0..column_height {
+                result_image.put_pixel(col as u32, (255 - row) as u32, Luma::from([0]));
             }
         }
 
@@ -41,9 +41,7 @@ impl ImageExt2 for DynamicImage {
             column_sum == size as usize
         })());
 
-        let img = image::GrayImage::from_raw(256, 256, result_image.to_vec()).unwrap();
-
-        image::DynamicImage::ImageLuma8(img)
+        image::DynamicImage::ImageLuma8(result_image)
     }
 }
 

@@ -5,6 +5,7 @@ use druid::{
     Color, Insets,
 };
 use imageops::{ImageExt, Operation};
+use imageops2::ImageExt2;
 
 use crate::imageops::*;
 use druid::{
@@ -181,6 +182,7 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
         .to_path_buf()
         .join("src/images/1/");
 
+    let mut histogram_row = Flex::row();
     if let Some(image_path) = state.selected_image.clone() {
         let selected_image = image::open(image_folder_path.join(image_path)).unwrap();
 
@@ -202,17 +204,31 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
 
         image_row.add_flex_child(original_image, 1.0);
 
-        image_row.add_flex_child(exec_op(&selected_image, state), 1.0)
+        image_row.add_flex_child(exec_op(&selected_image, state), 1.0);
+        histogram_row.add_flex_child(build_histogram(&selected_image, state), 1.0);
     };
     col.add_flex_child(build_image_list(), 1.0);
     col.add_flex_child(build_operation_list(), 1.0);
     col.add_flex_child(image_row, 4.0);
+    col.add_flex_child(histogram_row, 1.0);
     col.boxed()
 }
 
 pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
-    let image_row = Flex::row();
-    image_row
+    let build_image = || {
+        SizedBox::new(
+            apply_operation(image, state.selected_operation, &state)
+                .render_grayscale_histogram()
+                .to_druid_image()
+                .fill_mode(druid::widget::FillStrat::Fill),
+        )
+        .fix_width(1024.0)
+        .fix_height(512.0)
+        .border(Color::grey(0.6), 2.0)
+        .padding(Insets::uniform(10.0))
+    };
+
+    build_image()
 }
 
 pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
@@ -224,8 +240,8 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                 .to_druid_image()
                 .fill_mode(druid::widget::FillStrat::Cover),
         )
-        .fix_width(width as f64 * 1.5)
-        .fix_height(height as f64 * 1.5)
+        .fix_width(width as f64 * 1.2)
+        .fix_height(height as f64 * 1.2)
         .border(Color::grey(0.6), 2.0)
         .padding(Insets::uniform(10.0))
     };
