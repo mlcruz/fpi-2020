@@ -4,7 +4,7 @@ use druid::{
     widget::{Button, Flex, Label, Slider},
     Color, Insets,
 };
-use imageops::Operation;
+use imageops::{ImageExt, Operation};
 
 use crate::imageops::*;
 use druid::{
@@ -208,12 +208,18 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
     col.boxed()
 }
 
+pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
+    let image_row = Flex::row();
+
+    image_row
+}
+
 pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
     let (width, height) = image.get_dimensions();
 
-    let make_sized = |inner: &DynamicImage| {
+    let build_image = |op: Operation, state: &AppState| {
         SizedBox::new(
-            inner
+            apply_operation(image, op, &state)
                 .to_druid_image()
                 .fill_mode(druid::widget::FillStrat::Cover),
         )
@@ -223,49 +229,53 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
         .padding(Insets::uniform(10.0))
     };
 
-    let result = match state.selected_operation {
-        Operation::FlipH => make_sized(&image.flip_h()),
-        Operation::FlipV => make_sized(&image.flip_v()),
-        Operation::Save => {
-            let display = match state.last_operation {
-                Operation::FlipH => make_sized(&image.flip_h()),
-                Operation::FlipV => make_sized(&image.flip_v()),
-                Operation::Save => panic!(),
-                Operation::Grayscale => make_sized(&image.to_grayscale_rgb()),
-                Operation::Quantize => make_sized(&image.quantize_grayscale(state.qty as u8)),
-            };
+    // Operation::Save => {
+    //     let display = match state.last_operation {
+    //         Operation::FlipH => build_image(&image.flip_h()),
+    //         Operation::FlipV => build_image(&image.flip_v()),
+    //         Operation::Save => panic!(),
+    //         Operation::Grayscale => build_image(&image.to_grayscale_rgb()),
+    //         Operation::Quantize => build_image(&image.quantize_grayscale(state.qty as u8)),
+    //     };
 
-            let result_path = Path::new(&std::env::current_dir().unwrap())
-                .to_path_buf()
-                .join("src/result_images");
+    //     display
+    // }
+    // };
 
-            let selected = state.selected_image.clone().unwrap();
-            let image_name = Path::new(&selected).file_name().unwrap().to_str().unwrap();
+    let display = build_image(state.selected_operation, state);
 
-            let format_save = |op| result_path.join(format!("{}-{}.jpg", op, image_name));
-            match state.last_operation {
-                Operation::FlipH => &image.flip_h().save(format_save("flip_h")).unwrap(),
-                Operation::FlipV => &image.flip_v().save(format_save("flip_v")).unwrap(),
-                Operation::Save => {
-                    panic!();
-                }
-                Operation::Grayscale => &image
-                    .to_grayscale_rgb()
-                    .save(format_save("grayscale"))
-                    .unwrap(),
-                Operation::Quantize => &image
-                    .quantize_grayscale(state.qty as u8)
-                    .save(format_save(&format!("quantize-{}", state.qty as u8)))
-                    .unwrap(),
-            };
+    if state.selected_operation == Operation::Save {
+        let image_to_save = apply_operation(image, state.last_operation, state);
 
-            display
-        }
-        Operation::Grayscale => make_sized(&image.to_grayscale_rgb()),
-        Operation::Quantize => make_sized(&image.quantize_grayscale(state.qty as u8)),
-    };
+        let result_path = Path::new(&std::env::current_dir().unwrap())
+            .to_path_buf()
+            .join("src/result_images");
 
-    result
+        let selected = state.selected_image.clone().unwrap();
+        let image_name = Path::new(&selected).file_name().unwrap().to_str().unwrap();
+        let format_save = |op| result_path.join(format!("{}-{}.jpg", op, image_name));
+
+        match state.last_operation {
+            Operation::FlipH => image_to_save.save(format_save("flip_h")).unwrap(),
+            Operation::FlipV => image_to_save.save(format_save("flip_v")).unwrap(),
+            Operation::Save => (),
+            Operation::Grayscale => image_to_save.save(format_save("grayscale")).unwrap(),
+            Operation::Quantize => image_to_save
+                .save(format_save(&format!("quantize-{}", state.qty as u8)))
+                .unwrap(),
+        };
+    }
+    display
+}
+
+pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) -> DynamicImage {
+    match op {
+        Operation::FlipH => image.flip_h(),
+        Operation::FlipV => image.flip_v(),
+        Operation::Save => image.clone(),
+        Operation::Grayscale => image.to_grayscale_rgb(),
+        Operation::Quantize => image.quantize_grayscale(state.qty as u8),
+    }
 }
 
 #[cfg(test)]
