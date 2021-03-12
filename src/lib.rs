@@ -14,6 +14,7 @@ use druid::{
 use image::DynamicImage;
 
 pub mod imageops;
+pub mod imageops2;
 
 #[derive(Debug, Data, Clone, Lens)]
 pub struct AppState {
