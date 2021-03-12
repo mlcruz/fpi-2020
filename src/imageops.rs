@@ -137,6 +137,7 @@ impl ImageExt for DynamicImage {
 
 #[derive(Debug, Data, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
+    None,
     FlipH,
     FlipV,
     Save,

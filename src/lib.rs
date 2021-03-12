@@ -97,6 +97,8 @@ fn build_operation_list() -> impl Widget<AppState> {
         Button::new(text).on_click(move |_ctx, data: &mut AppState, _env| {
             if data.selected_operation != Operation::Save {
                 data.last_operation = data.selected_operation;
+            } else {
+                data.selected_operation = data.last_operation;
             }
 
             data.selected_operation = op;
@@ -210,7 +212,6 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
 
 pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
     let image_row = Flex::row();
-
     image_row
 }
 
@@ -228,21 +229,6 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
         .border(Color::grey(0.6), 2.0)
         .padding(Insets::uniform(10.0))
     };
-
-    // Operation::Save => {
-    //     let display = match state.last_operation {
-    //         Operation::FlipH => build_image(&image.flip_h()),
-    //         Operation::FlipV => build_image(&image.flip_v()),
-    //         Operation::Save => panic!(),
-    //         Operation::Grayscale => build_image(&image.to_grayscale_rgb()),
-    //         Operation::Quantize => build_image(&image.quantize_grayscale(state.qty as u8)),
-    //     };
-
-    //     display
-    // }
-    // };
-
-    let display = build_image(state.selected_operation, state);
 
     if state.selected_operation == Operation::Save {
         let image_to_save = apply_operation(image, state.last_operation, state);
@@ -263,18 +249,24 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
             Operation::Quantize => image_to_save
                 .save(format_save(&format!("quantize-{}", state.qty as u8)))
                 .unwrap(),
+            Operation::None => (),
         };
     }
-    display
+    build_image(state.selected_operation, state)
 }
 
 pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) -> DynamicImage {
+    // we dont want a stack overflow do we
+    if state.last_operation == Operation::Save && state.selected_operation == Operation::Save {
+        panic!("uh oh")
+    }
     match op {
         Operation::FlipH => image.flip_h(),
         Operation::FlipV => image.flip_v(),
-        Operation::Save => image.clone(),
+        Operation::Save => apply_operation(image, state.last_operation, state),
         Operation::Grayscale => image.to_grayscale_rgb(),
         Operation::Quantize => image.quantize_grayscale(state.qty as u8),
+        Operation::None => image.clone(),
     }
 }
 
