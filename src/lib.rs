@@ -115,6 +115,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     row.add_flex_child(build_op_btn("Grayscale", Operation::Grayscale), 1.0);
     row.add_flex_child(build_op_btn("Brilho", Operation::AdjustBrightness), 1.0);
     row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
+    row.add_flex_child(build_op_btn("ZoomOut", Operation::ZoomOut), 1.0);
 
     let mut param_row_1 = Flex::row();
     let param_slider = Flex::column()
@@ -153,7 +154,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     let mut param_row_2 = Flex::row();
     let param_slider = Flex::column()
         .with_flex_child(
-            Slider::new().with_range(0.1, 5.0).fix_size(512.0, 50.0),
+            Slider::new().with_range(1.0, 5.0).fix_size(512.0, 50.0),
             1.0,
         )
         .lens(AppState::param2);
@@ -161,7 +162,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     param_row_2.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
     param_row_2.add_flex_child(
         Flex::column().with_flex_child(
-            Label::new(|data: &AppState, _: &_| format!("{}", data.param2)),
+            Label::new(|data: &AppState, _: &_| format!("{:.0}", data.param2)),
             1.0,
         ),
         1.0,
@@ -170,7 +171,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     let mut param_row_3 = Flex::row();
     let param_slider = Flex::column()
         .with_flex_child(
-            Slider::new().with_range(0.1, 5.0).fix_size(512.0, 50.0),
+            Slider::new().with_range(1.0, 5.0).fix_size(512.0, 50.0),
             1.0,
         )
         .lens(AppState::param3);
@@ -178,7 +179,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     param_row_3.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
     param_row_3.add_flex_child(
         Flex::column().with_flex_child(
-            Label::new(|data: &AppState, _: &_| format!("{}", data.param3)),
+            Label::new(|data: &AppState, _: &_| format!("{:.0}", data.param3)),
             1.0,
         ),
         1.0,
@@ -322,6 +323,13 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
             Operation::AdjustContrast => image_to_save
                 .save(format_save(&format!("constrast-{}", state.param1 as u8)))
                 .unwrap(),
+            Operation::ZoomOut => image_to_save
+                .save(format_save(&format!(
+                    "zoomout-{}-{}",
+                    state.param2.ceil() as u8,
+                    state.param3.ceil() as u8
+                )))
+                .unwrap(),
             Operation::None => (),
         };
     }
@@ -343,6 +351,7 @@ pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) ->
         Operation::AdjustBrightness => image.adjust_brightness(state.param1 as u8),
         Operation::AdjustContrast => image.adjust_contrast_2(state.param1 as u8),
         Operation::Negative => image.negative(),
+        Operation::ZoomOut => image.zoom_out(state.param2 as u8, state.param3 as u8),
     }
 }
 
