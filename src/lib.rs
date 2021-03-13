@@ -22,7 +22,9 @@ pub struct AppState {
     pub selected_image: Option<String>,
     pub selected_operation: Operation,
     pub last_operation: Operation,
-    pub qty: f64,
+    pub param1: f64,
+    pub param2: f64,
+    pub param3: f64,
 }
 
 impl AppState {
@@ -30,7 +32,9 @@ impl AppState {
         Self {
             selected_image: None,
             selected_operation: Operation::FlipH,
-            qty: 64.0,
+            param1: 64.0,
+            param2: 1.0,
+            param3: 1.0,
             last_operation: Operation::FlipH,
         }
     }
@@ -106,42 +110,87 @@ fn build_operation_list() -> impl Widget<AppState> {
         })
     };
 
-    row.add_flex_child(build_op_btn("Espelhamento Vertical", Operation::FlipV), 1.0);
-    row.add_flex_child(
-        build_op_btn("Espelhamento Horizontal", Operation::FlipH),
-        1.0,
-    );
+    row.add_flex_child(build_op_btn("Negativo", Operation::Negative), 1.0);
+    row.add_flex_child(build_op_btn("Contraste", Operation::AdjustContrast), 1.0);
     row.add_flex_child(build_op_btn("Grayscale", Operation::Grayscale), 1.0);
+    row.add_flex_child(build_op_btn("Brilho", Operation::AdjustBrightness), 1.0);
+    row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
 
-    let mut qty_row = Flex::row();
-
-    let qry_slider = Flex::column()
+    let mut param_row_1 = Flex::row();
+    let param_slider = Flex::column()
         .with_flex_child(
-            Slider::new().with_range(1.0, 255.0).fix_size(200.0, 50.0),
+            Slider::new().with_range(1.0, 255.0).fix_size(768.0, 50.0),
             1.0,
         )
-        .lens(AppState::qty);
+        .lens(AppState::param1);
 
-    qty_row.add_flex_child(Flex::column().with_flex_child(qry_slider, 1.0), 1.0);
-    qty_row.add_flex_child(
+    param_row_1.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
+    param_row_1.add_flex_child(
         Flex::column().with_flex_child(
-            Label::new(|data: &AppState, _: &_| format!("Tons {}", data.qty as usize)),
+            Label::new(|data: &AppState, _: &_| format!("{}", data.param1 as usize)),
             1.0,
         ),
         1.0,
     );
-    qty_row.add_flex_child(
-        Flex::column().with_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0),
+
+    let mut param_row_1 = Flex::row();
+    let param_slider = Flex::column()
+        .with_flex_child(
+            Slider::new().with_range(1.0, 255.0).fix_size(768.0, 50.0),
+            1.0,
+        )
+        .lens(AppState::param1);
+
+    param_row_1.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
+    param_row_1.add_flex_child(
+        Flex::column().with_flex_child(
+            Label::new(|data: &AppState, _: &_| format!("{}", data.param1 as usize)),
+            1.0,
+        ),
         1.0,
     );
 
-    col.add_flex_child(row, 1.0);
-    col.add_default_spacer();
-    col.add_flex_child(qty_row, 1.0);
-    col.add_flex_child(
-        Flex::row().with_flex_child(build_op_btn("Salvar", Operation::Save), 1.0),
+    let mut param_row_2 = Flex::row();
+    let param_slider = Flex::column()
+        .with_flex_child(
+            Slider::new().with_range(0.1, 5.0).fix_size(512.0, 50.0),
+            1.0,
+        )
+        .lens(AppState::param2);
+
+    param_row_2.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
+    param_row_2.add_flex_child(
+        Flex::column().with_flex_child(
+            Label::new(|data: &AppState, _: &_| format!("{}", data.param2)),
+            1.0,
+        ),
         1.0,
     );
+
+    let mut param_row_3 = Flex::row();
+    let param_slider = Flex::column()
+        .with_flex_child(
+            Slider::new().with_range(0.1, 5.0).fix_size(512.0, 50.0),
+            1.0,
+        )
+        .lens(AppState::param3);
+
+    param_row_3.add_flex_child(Flex::column().with_flex_child(param_slider, 1.0), 1.0);
+    param_row_3.add_flex_child(
+        Flex::column().with_flex_child(
+            Label::new(|data: &AppState, _: &_| format!("{}", data.param3)),
+            1.0,
+        ),
+        1.0,
+    );
+
+    col.add_flex_child(row, 2.0);
+    col.add_default_spacer();
+    col.add_flex_child(param_row_1, 1.0);
+    col.add_default_spacer();
+    col.add_flex_child(param_row_2, 1.0);
+    col.add_default_spacer();
+    col.add_flex_child(param_row_3, 1.0);
 
     col
 }
@@ -162,7 +211,7 @@ fn build_image_list() -> impl Widget<AppState> {
             .on_click(move |_ctx, data: &mut AppState, _env| {
                 data.selected_image = label.clone().into()
             })
-            .fix_height(100.0);
+            .fix_height(50.0);
 
         let mut inner_col = Flex::column();
         inner_col.add_flex_child(btn, 1.0);
@@ -194,8 +243,8 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
                     .to_druid_image()
                     .fill_mode(druid::widget::FillStrat::Cover),
             )
-            .fix_width(width as f64 * 1.5)
-            .fix_height(height as f64 * 1.5)
+            .fix_width(width as f64 * 1.2)
+            .fix_height(height as f64 * 1.2)
             .border(Color::grey(0.6), 2.0)
             .padding(Insets::uniform(10.0))
         };
@@ -259,11 +308,19 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
 
         match state.last_operation {
             Operation::FlipH => image_to_save.save(format_save("flip_h")).unwrap(),
+            Operation::Negative => image_to_save.save(format_save("negative")).unwrap(),
             Operation::FlipV => image_to_save.save(format_save("flip_v")).unwrap(),
             Operation::Save => (),
             Operation::Grayscale => image_to_save.save(format_save("grayscale")).unwrap(),
             Operation::Quantize => image_to_save
-                .save(format_save(&format!("quantize-{}", state.qty as u8)))
+                .save(format_save(&format!("quantize-{}", state.param1 as u8)))
+                .unwrap(),
+            Operation::AdjustBrightness => image_to_save
+                .save(format_save(&format!("brightness-{}", state.param1 as u8)))
+                .unwrap(),
+
+            Operation::AdjustContrast => image_to_save
+                .save(format_save(&format!("constrast-{}", state.param1 as u8)))
                 .unwrap(),
             Operation::None => (),
         };
@@ -281,8 +338,11 @@ pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) ->
         Operation::FlipV => image.flip_v(),
         Operation::Save => apply_operation(image, state.last_operation, state),
         Operation::Grayscale => image.to_grayscale_rgb(),
-        Operation::Quantize => image.quantize_grayscale(state.qty as u8),
+        Operation::Quantize => image.quantize_grayscale(state.param1 as u8),
         Operation::None => image.clone(),
+        Operation::AdjustBrightness => image.adjust_brightness(state.param1 as u8),
+        Operation::AdjustContrast => image.adjust_contrast_2(state.param1 as u8),
+        Operation::Negative => image.negative(),
     }
 }
 

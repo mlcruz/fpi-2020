@@ -1,9 +1,14 @@
-use image::{DynamicImage, GenericImageView, GrayImage, Luma};
+use std::cmp::{max, min};
+
+use image::{DynamicImage, GenericImage, GenericImageView, GrayImage, Luma, Pixel, Rgba};
 
 use crate::imageops::ImageExt;
 
 pub trait ImageExt2 {
     fn render_grayscale_histogram(&self) -> DynamicImage;
+    fn adjust_brightness(&self, val: u8) -> DynamicImage;
+    fn adjust_contrast_2(&self, val: u8) -> DynamicImage;
+    fn negative(&self) -> DynamicImage;
 }
 
 impl ImageExt2 for DynamicImage {
@@ -42,6 +47,68 @@ impl ImageExt2 for DynamicImage {
         })());
 
         image::DynamicImage::ImageLuma8(result_image)
+    }
+
+    fn adjust_brightness(&self, val: u8) -> DynamicImage {
+        let mut new_img = self.clone();
+
+        let adjust_pixel = |p: u8| {
+            let result = min(255, max(0, p as i32 + val as i32));
+            debug_assert!(result <= 255 && result >= 0);
+            result as u8
+        };
+
+        for (x, y, pixel) in self.pixels() {
+            let (r, g, b, a) = pixel.channels4();
+            new_img.put_pixel(
+                x,
+                y,
+                Rgba::from([adjust_pixel(r), adjust_pixel(g), adjust_pixel(b), a]),
+            );
+        }
+
+        new_img
+    }
+
+    fn adjust_contrast_2(&self, val: u8) -> DynamicImage {
+        let mut new_img = self.clone();
+
+        let adjust_pixel = |p: u8| {
+            let result = min(255, max(0, p as i32 * val as i32));
+            debug_assert!(result <= 255 && result >= 0);
+            result as u8
+        };
+
+        for (x, y, pixel) in self.pixels() {
+            let (r, g, b, a) = pixel.channels4();
+            new_img.put_pixel(
+                x,
+                y,
+                Rgba::from([adjust_pixel(r), adjust_pixel(g), adjust_pixel(b), a]),
+            );
+        }
+
+        new_img
+    }
+
+    fn negative(&self) -> DynamicImage {
+        let mut new_img = self.clone();
+
+        let adjust_pixel = |p: u8| {
+            let result = min(255, max(0, 255 - p));
+            result
+        };
+
+        for (x, y, pixel) in self.pixels() {
+            let (r, g, b, a) = pixel.channels4();
+            new_img.put_pixel(
+                x,
+                y,
+                Rgba::from([adjust_pixel(r), adjust_pixel(g), adjust_pixel(b), a]),
+            );
+        }
+
+        new_img
     }
 }
 

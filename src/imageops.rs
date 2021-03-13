@@ -143,6 +143,9 @@ pub enum Operation {
     Save,
     Grayscale,
     Quantize,
+    AdjustBrightness,
+    AdjustContrast,
+    Negative,
 }
 
 pub trait ToDruidImage {
