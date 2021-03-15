@@ -17,6 +17,7 @@ pub trait ImageExt2 {
     fn adjust_contrast_2(&self, val: u8) -> DynamicImage;
     fn negative(&self) -> DynamicImage;
     fn zoom_out(&self, x: u8, y: u8) -> DynamicImage;
+    fn zoom_in(&self) -> DynamicImage;
 }
 
 impl ImageExt2 for DynamicImage {
@@ -39,8 +40,6 @@ impl ImageExt2 for DynamicImage {
 
         for (col, count) in histogram.iter().enumerate() {
             let column_height = (*count as f64 / pixel_value).ceil() as u8;
-            dbg!(column_height);
-
             for row in 0..column_height {
                 result_image.put_pixel(col as u32, (255 - row) as u32, Luma::from([0]));
             }
@@ -138,16 +137,12 @@ impl ImageExt2 for DynamicImage {
             for i in 0..scaling_h as usize {
                 let col_idx = (i * 3 * w as usize) + offset;
 
-                if (col_idx > 2870) {
-                    let foo = true;
-                }
-
                 for j in 0..(scaling_w as usize * 3) {
                     let value = row[col_idx + j];
-                    buf.push(value)
+                    buf.push(value);
                 }
             }
-
+            debug_assert!(buf.len() == (scaling_w * scaling_h * 3) as usize);
             buf
         };
 
@@ -174,6 +169,84 @@ impl ImageExt2 for DynamicImage {
         let image = RgbImage::from_raw(new_w, new_h, buffer).unwrap();
 
         DynamicImage::ImageRgb8(image)
+    }
+
+    fn zoom_in(&self) -> DynamicImage {
+        let (w, h) = self.dimensions();
+        let mut new_img = image::DynamicImage::new_rgb8((w * 2) - 1, (h * 2) - 1);
+        let empty = new_img.clone();
+
+        let interpolate = |x: Rgba<u8>, y: Rgba<u8>| {
+            let x = x.channels();
+            let y = y.channels();
+
+            let new_r = ((x[0] as u32 + y[0] as u32) / 2) as u8;
+            let new_g = ((x[1] as u32 + y[1] as u32) / 2) as u8;
+            let new_b = ((x[2] as u32 + y[2] as u32) / 2) as u8;
+
+            Rgba::from([new_r, new_g, new_b, 1])
+        };
+
+        // let get_hl = |x: u32| {
+        //     let val = x as f32 / 2.0;
+
+        //     (val.ceil() as u32, val.floor() as u32)
+        // };
+
+        // Pixels onde (x,y) são pares são originais
+        for (x, y, pixel) in self.pixels() {
+            new_img.put_pixel(x * 2, y * 2, pixel);
+        }
+
+        for (x, y, _) in empty.pixels() {
+            // Preenchemos as colunas impares e linhas pares
+            if ((x % 2) == 1) && ((y % 2) == 0) {
+                let after = new_img.get_pixel(x + 1, y);
+                let before = new_img.get_pixel(x - 1, y);
+                new_img.put_pixel(x, y, interpolate(before, after));
+            }
+
+            // Preenchemos as colunas pares e linhas impares
+            if ((x % 2) == 0) && ((y % 2) == 1) {
+                let after = new_img.get_pixel(x, y + 1);
+                let before = new_img.get_pixel(x, y - 1);
+                new_img.put_pixel(x, y, interpolate(before, after));
+            }
+        }
+
+        for (x, y, _) in empty.pixels() {
+            // Preenchemos as colunas impares e linhas impares
+            if ((x % 2) == 1) && ((y % 2) == 1) {
+                let after = new_img.get_pixel(x, y + 1);
+                let before = new_img.get_pixel(x, y - 1);
+                let y_interpolated = interpolate(before, after);
+
+                let after = new_img.get_pixel(x + 1, y);
+                let before = new_img.get_pixel(x - 1, y);
+                let x_interpolated = interpolate(after, before);
+
+                let interpolated = interpolate(x_interpolated, y_interpolated);
+                new_img.put_pixel(x, y, interpolated);
+            }
+        }
+
+        //  // Coluna impar em linha par
+        //  else if ((x % 2) == 1) && ((y % 2) == 0) {
+        //     let (after_x, before_x) = get_hl(x);
+
+        //
+        // }
+
+        // // Coluna par em linha impar
+        // if ((x % 2) == 0) && ((y % 2) == 1) {
+        //     // X 1 -> 0 - 1.
+        //     let (after_y, before_y) = get_hl(y);
+        //     let before = self.get_pixel(x / 2, before_y);
+        //     let after = self.get_pixel(x / 2, after_y);
+        //     new_img.put_pixel(x, y, interpolate(before, after));
+        //        }
+
+        new_img
     }
 }
 

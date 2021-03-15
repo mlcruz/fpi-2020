@@ -15,8 +15,8 @@ pub fn main() {
         selected_image: "Gramado_22k.jpg".to_owned().into(),
         selected_operation: Operation::None,
         param1: 64.0,
-        param2: 3.0,
-        param3: 3.0,
+        param2: 2.0,
+        param3: 2.0,
         last_operation: Operation::None,
     };
 

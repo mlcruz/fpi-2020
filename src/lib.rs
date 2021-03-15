@@ -116,6 +116,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     row.add_flex_child(build_op_btn("Brilho", Operation::AdjustBrightness), 1.0);
     row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
     row.add_flex_child(build_op_btn("ZoomOut", Operation::ZoomOut), 1.0);
+    row.add_flex_child(build_op_btn("ZoomIn", Operation::ZoomIn), 1.0);
 
     let mut param_row_1 = Flex::row();
     let param_slider = Flex::column()
@@ -330,6 +331,14 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                     state.param3.ceil() as u8
                 )))
                 .unwrap(),
+
+            Operation::ZoomIn => image_to_save
+                .save(format_save(&format!(
+                    "zoomin-{}-{}",
+                    state.param2.ceil() as u8,
+                    state.param3.ceil() as u8
+                )))
+                .unwrap(),
             Operation::None => (),
         };
     }
@@ -352,6 +361,7 @@ pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) ->
         Operation::AdjustContrast => image.adjust_contrast_2(state.param1 as u8),
         Operation::Negative => image.negative(),
         Operation::ZoomOut => image.zoom_out(state.param2 as u8, state.param3 as u8),
+        Operation::ZoomIn => image.zoom_in(),
     }
 }
 

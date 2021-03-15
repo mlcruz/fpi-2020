@@ -147,6 +147,7 @@ pub enum Operation {
     AdjustContrast,
     Negative,
     ZoomOut,
+    ZoomIn,
 }
 
 pub trait ToDruidImage {
