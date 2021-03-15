@@ -13,6 +13,14 @@ use crate::imageops::ImageExt;
 
 pub type Kernel = [f32; 9];
 
+pub static GAUSSIANO: Kernel = [
+    0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625,
+];
+
+pub static LAPLACIANO: Kernel = [0.0, -1.0, 0.0, -1.0, 4.0, -1.0, 0.0, -1.0, 0.0];
+
+pub static PASSA_ALTAS: Kernel = [-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0];
+
 pub trait ImageExt2 {
     fn render_grayscale_histogram(&self) -> DynamicImage;
     fn adjust_brightness(&self, val: u8) -> DynamicImage;
@@ -242,13 +250,20 @@ impl ImageExt2 for DynamicImage {
             (0, 1),
             (1, 1),
         ];
+
         let mut new_img = self.to_grayscale_rgb();
         let clamp = |rgb: (f32, f32, f32)| {
-            {
+            if kernel == LAPLACIANO || kernel == GAUSSIANO || kernel == PASSA_ALTAS {
                 (
                     min(255, max(rgb.0 as i32, 0)) as u8,
                     min(255, max(rgb.1 as i32, 0)) as u8,
                     min(255, max(rgb.2 as i32, 0)) as u8,
+                )
+            } else {
+                (
+                    min(255, max(rgb.0 as i32 + 127, 0)) as u8,
+                    min(255, max(rgb.1 as i32 + 127, 0)) as u8,
+                    min(255, max(rgb.2 as i32 + 127, 0)) as u8,
                 )
             }
         };

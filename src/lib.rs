@@ -12,7 +12,7 @@ use druid::{
     widget::SizedBox, BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, Lens, LifeCycle,
     LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetId,
 };
-use image::{DynamicImage, GenericImageView};
+use image::DynamicImage;
 
 pub mod imageops;
 pub mod imageops2;
@@ -118,15 +118,64 @@ fn build_operation_list() -> impl Widget<AppState> {
     row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
     row.add_flex_child(build_op_btn("ZoomOut", Operation::ZoomOut), 1.0);
     row.add_flex_child(build_op_btn("ZoomIn", Operation::ZoomIn), 1.0);
-    row.add_flex_child(
+    row.add_flex_child(build_op_btn("Salvar", Operation::Save), 1.0);
+
+    row2.add_flex_child(
+        build_op_btn(
+            "Gaussiano",
+            Operation::Convolution([
+                0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625,
+            ]),
+        ),
+        1.0,
+    );
+
+    row2.add_flex_child(
         build_op_btn(
             "Laplaciano",
+            Operation::Convolution([0.0, -1.0, 0.0, -1.0, 4.0, -1.0, 0.0, -1.0, 0.0]),
+        ),
+        1.0,
+    );
+
+    row2.add_flex_child(
+        build_op_btn(
+            "Passa Altas",
             Operation::Convolution([-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0]),
         ),
         1.0,
     );
 
-    row2.add_flex_child(build_op_btn("Salvar", Operation::Save), 1.0);
+    row2.add_flex_child(
+        build_op_btn(
+            "Prewitt Hx",
+            Operation::Convolution([-1.0, 0.0, 1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0]),
+        ),
+        1.0,
+    );
+
+    row2.add_flex_child(
+        build_op_btn(
+            "Prewitt Hy",
+            Operation::Convolution([-1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+        ),
+        1.0,
+    );
+
+    row2.add_flex_child(
+        build_op_btn(
+            "Sebel Hx",
+            Operation::Convolution([-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]),
+        ),
+        1.0,
+    );
+    row2.add_flex_child(
+        build_op_btn(
+            "Sebel Hy",
+            Operation::Convolution([-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]),
+        ),
+        1.0,
+    );
 
     let mut param_row_1 = Flex::row();
     let param_slider = Flex::column()
@@ -367,7 +416,6 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                     state.param3.ceil() as u8
                 )))
                 .unwrap(),
-
             Operation::ZoomIn => image_to_save
                 .save(format_save(&format!(
                     "zoomin-{}-{}",
@@ -375,6 +423,10 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                     state.param3.ceil() as u8
                 )))
                 .unwrap(),
+            Operation::Convolution(_) => image_to_save
+                .save(format_save(&format!("convolution",)))
+                .unwrap(),
+
             _ => (),
         };
     }
