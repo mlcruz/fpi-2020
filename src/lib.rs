@@ -12,7 +12,7 @@ use druid::{
     widget::SizedBox, BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, Lens, LifeCycle,
     LifeCycleCtx, PaintCtx, Size, UpdateCtx, Widget, WidgetExt, WidgetId,
 };
-use image::DynamicImage;
+use image::{DynamicImage, GenericImageView};
 
 pub mod imageops;
 pub mod imageops2;
@@ -97,6 +97,7 @@ impl Widget<AppState> for UiBuilder {
 fn build_operation_list() -> impl Widget<AppState> {
     let mut col = Flex::column();
     let mut row = Flex::row();
+    let mut row2 = Flex::row();
 
     let build_op_btn = |text, op| {
         Button::new(text).on_click(move |_ctx, data: &mut AppState, _env| {
@@ -117,7 +118,15 @@ fn build_operation_list() -> impl Widget<AppState> {
     row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
     row.add_flex_child(build_op_btn("ZoomOut", Operation::ZoomOut), 1.0);
     row.add_flex_child(build_op_btn("ZoomIn", Operation::ZoomIn), 1.0);
-    row.add_flex_child(build_op_btn("Laplaciano", Operation::Convolution), 1.0);
+    row.add_flex_child(
+        build_op_btn(
+            "Laplaciano",
+            Operation::Convolution([-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0]),
+        ),
+        1.0,
+    );
+
+    row2.add_flex_child(build_op_btn("Salvar", Operation::Save), 1.0);
 
     let mut param_row_1 = Flex::row();
     let param_slider = Flex::column()
@@ -189,6 +198,8 @@ fn build_operation_list() -> impl Widget<AppState> {
 
     col.add_flex_child(row, 2.0);
     col.add_default_spacer();
+    col.add_flex_child(row2, 2.0);
+    col.add_default_spacer();
     col.add_flex_child(param_row_1, 1.0);
     col.add_default_spacer();
     col.add_flex_child(param_row_2, 1.0);
@@ -258,12 +269,36 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
 
         image_row.add_flex_child(exec_op(&selected_image, state), 1.0);
         histogram_row.add_flex_child(build_histogram(&selected_image, state), 1.0);
+        histogram_row.add_flex_child(
+            build_histogram_label(&apply_operation(
+                &selected_image,
+                state.selected_operation,
+                state,
+            )),
+            1.0,
+        );
     };
     col.add_flex_child(build_image_list(), 1.0);
-    col.add_flex_child(build_operation_list(), 1.0);
+    col.add_flex_child(build_operation_list(), 1.5);
     col.add_flex_child(image_row, 4.0);
-    col.add_flex_child(histogram_row, 1.0);
+    col.add_flex_child(histogram_row, 2.0);
     col.boxed()
+}
+
+pub fn build_histogram_label(image: &DynamicImage) -> impl Widget<AppState> {
+    let grayscale = image.to_grayscale();
+    let mut histogram: [u32; 256] = [0; 256];
+
+    for l in grayscale.as_bytes() {
+        histogram[*l as usize] += 1;
+    }
+
+    // maximum value is going to be our full column
+    let max_val = histogram.iter().max().unwrap();
+    let pixel_value = (*max_val as f64) / 255.0;
+
+    let label = Label::new(format!("1 pixel = {:.2}. Max = {}", pixel_value, max_val));
+    label
 }
 
 pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
@@ -274,8 +309,8 @@ pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<Ap
                 .to_druid_image()
                 .fill_mode(druid::widget::FillStrat::Fill),
         )
-        .fix_width(1024.0)
-        .fix_height(512.0)
+        .fix_width(256.0)
+        .fix_height(256.0)
         .border(Color::grey(0.6), 2.0)
         .padding(Insets::uniform(10.0))
     };
@@ -340,7 +375,7 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                     state.param3.ceil() as u8
                 )))
                 .unwrap(),
-            Operation::None | Operation::Convolution => (),
+            _ => (),
         };
     }
     build_image(state.selected_operation, state)
@@ -363,12 +398,7 @@ pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) ->
         Operation::Negative => image.negative(),
         Operation::ZoomOut => image.zoom_out(state.param2 as u8, state.param3 as u8),
         Operation::ZoomIn => image.zoom_in(),
-        Operation::Convolution => {
-            image.convolution([-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0])
-            // image
-            //     .to_grayscale_rgb()
-            //     .filter3x3(&[-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0])
-        }
+        Operation::Convolution(kernel) => image.convolution(kernel),
     }
 }
 

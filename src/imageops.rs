@@ -3,6 +3,8 @@ use image::{
     DynamicImage, EncodableLayout, GenericImage, GenericImageView, GrayImage, Luma, RgbImage, Rgba,
 };
 
+use crate::imageops2::Kernel;
+
 pub trait ImageExt {
     fn flip_v(&self) -> DynamicImage;
     fn flip_h(&self) -> DynamicImage;
@@ -135,7 +137,7 @@ impl ImageExt for DynamicImage {
     }
 }
 
-#[derive(Debug, Data, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Data, Clone, Copy, PartialEq)]
 pub enum Operation {
     None,
     FlipH,
@@ -148,7 +150,7 @@ pub enum Operation {
     Negative,
     ZoomOut,
     ZoomIn,
-    Convolution,
+    Convolution(Kernel),
 }
 
 pub trait ToDruidImage {
