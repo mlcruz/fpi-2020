@@ -148,6 +148,7 @@ pub enum Operation {
     Negative,
     ZoomOut,
     ZoomIn,
+    Convolution,
 }
 
 pub trait ToDruidImage {

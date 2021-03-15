@@ -117,6 +117,7 @@ fn build_operation_list() -> impl Widget<AppState> {
     row.add_flex_child(build_op_btn("Quantizar", Operation::Quantize), 1.0);
     row.add_flex_child(build_op_btn("ZoomOut", Operation::ZoomOut), 1.0);
     row.add_flex_child(build_op_btn("ZoomIn", Operation::ZoomIn), 1.0);
+    row.add_flex_child(build_op_btn("Laplaciano", Operation::Convolution), 1.0);
 
     let mut param_row_1 = Flex::row();
     let param_slider = Flex::column()
@@ -339,7 +340,7 @@ pub fn exec_op(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> 
                     state.param3.ceil() as u8
                 )))
                 .unwrap(),
-            Operation::None => (),
+            Operation::None | Operation::Convolution => (),
         };
     }
     build_image(state.selected_operation, state)
@@ -362,6 +363,12 @@ pub fn apply_operation(image: &DynamicImage, op: Operation, state: &AppState) ->
         Operation::Negative => image.negative(),
         Operation::ZoomOut => image.zoom_out(state.param2 as u8, state.param3 as u8),
         Operation::ZoomIn => image.zoom_in(),
+        Operation::Convolution => {
+            image.convolution([-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0])
+            // image
+            //     .to_grayscale_rgb()
+            //     .filter3x3(&[-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0])
+        }
     }
 }
 

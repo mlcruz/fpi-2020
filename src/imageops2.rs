@@ -11,6 +11,8 @@ use image::{
 
 use crate::imageops::ImageExt;
 
+pub type Kernel = [f32; 9];
+
 pub trait ImageExt2 {
     fn render_grayscale_histogram(&self) -> DynamicImage;
     fn adjust_brightness(&self, val: u8) -> DynamicImage;
@@ -18,6 +20,7 @@ pub trait ImageExt2 {
     fn negative(&self) -> DynamicImage;
     fn zoom_out(&self, x: u8, y: u8) -> DynamicImage;
     fn zoom_in(&self) -> DynamicImage;
+    fn convolution(&self, kernel: Kernel) -> DynamicImage;
 }
 
 impl ImageExt2 for DynamicImage {
@@ -187,13 +190,6 @@ impl ImageExt2 for DynamicImage {
             Rgba::from([new_r, new_g, new_b, 1])
         };
 
-        // let get_hl = |x: u32| {
-        //     let val = x as f32 / 2.0;
-
-        //     (val.ceil() as u32, val.floor() as u32)
-        // };
-
-        // Pixels onde (x,y) são pares são originais
         for (x, y, pixel) in self.pixels() {
             new_img.put_pixel(x * 2, y * 2, pixel);
         }
@@ -229,22 +225,59 @@ impl ImageExt2 for DynamicImage {
                 new_img.put_pixel(x, y, interpolated);
             }
         }
+        new_img
+    }
 
-        //  // Coluna impar em linha par
-        //  else if ((x % 2) == 1) && ((y % 2) == 0) {
-        //     let (after_x, before_x) = get_hl(x);
+    fn convolution(&self, kernel: Kernel) -> DynamicImage {
+        let (w, h) = self.dimensions();
+        // relative kernel weight position to each pixel
+        let k_pos = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (0, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ];
+        let mut new_img = self.to_grayscale_rgb();
+        let clamp = |rgb: (f32, f32, f32)| {
+            {
+                (
+                    min(255, max(rgb.0 as i32, 0)) as u8,
+                    min(255, max(rgb.1 as i32, 0)) as u8,
+                    min(255, max(rgb.2 as i32, 0)) as u8,
+                )
+            }
+        };
 
-        //
-        // }
+        let mut apply_kernel = |x, y| {
+            let mut sum = (0.0, 0.0, 0.0);
 
-        // // Coluna par em linha impar
-        // if ((x % 2) == 0) && ((y % 2) == 1) {
-        //     // X 1 -> 0 - 1.
-        //     let (after_y, before_y) = get_hl(y);
-        //     let before = self.get_pixel(x / 2, before_y);
-        //     let after = self.get_pixel(x / 2, after_y);
-        //     new_img.put_pixel(x, y, interpolate(before, after));
-        //        }
+            for (idx, w) in kernel.iter().enumerate() {
+                let x = (x as i32 + k_pos[idx].0) as u32;
+                let y = (y as i32 + k_pos[idx].1) as u32;
+
+                let pixel = self.get_pixel(x, y);
+
+                sum.0 += (pixel[0] as f32) * w;
+                sum.1 += (pixel[1] as f32) * w;
+                sum.2 += (pixel[2] as f32) * w;
+            }
+            let sum = clamp(sum);
+
+            new_img.put_pixel(x, y, Rgba::from([sum.0 as u8, sum.1 as u8, sum.2 as u8, 1]));
+        };
+
+        for (x, y, _) in self.pixels() {
+            if x == 0 || y == 0 || x == (w - 1) || y == (h - 1) {
+                continue;
+            }
+
+            apply_kernel(x, y);
+        }
 
         new_img
     }
