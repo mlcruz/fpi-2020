@@ -142,7 +142,9 @@ impl ImageExt2 for DynamicImage {
             .chunks_exact((w * scaling_h as u32 * 3) as usize);
 
         let get_block = |row: &[u8], offset: usize| {
-            // Get a block of NxM pixels from some source as a flat array
+            // Get a block of MxN pixels from some source as a flat array
+            // M => scaling_H
+            // N => scanling_w
             let mut buf = Vec::with_capacity((scaling_w * scaling_h * 3) as usize);
 
             for i in 0..scaling_h as usize {

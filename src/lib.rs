@@ -111,6 +111,7 @@ fn build_operation_list() -> impl Widget<AppState> {
         })
     };
 
+    row.add_flex_child(build_op_btn("Limpar", Operation::None), 1.0);
     row.add_flex_child(build_op_btn("Negativo", Operation::Negative), 1.0);
     row.add_flex_child(build_op_btn("Contraste", Operation::AdjustContrast), 1.0);
     row.add_flex_child(build_op_btn("Grayscale", Operation::Grayscale), 1.0);
@@ -317,8 +318,22 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
         image_row.add_flex_child(original_image, 1.0);
 
         image_row.add_flex_child(exec_op(&selected_image, state), 1.0);
-        histogram_row.add_flex_child(build_histogram(&selected_image, state), 1.0);
-        histogram_row.add_flex_child(
+
+        let mut hist_col = Flex::column();
+
+        hist_col.add_flex_child(
+            build_histogram_label(&apply_operation(&selected_image, Operation::None, state)),
+            1.0,
+        );
+        hist_col.add_flex_child(
+            build_histogram(&selected_image, Operation::None, state),
+            6.0,
+        );
+        histogram_row.add_flex_child(hist_col, 1.0);
+
+        let mut hist_col = Flex::column();
+
+        hist_col.add_flex_child(
             build_histogram_label(&apply_operation(
                 &selected_image,
                 state.selected_operation,
@@ -326,11 +341,17 @@ pub fn build_app_ui(state: &AppState) -> Box<dyn Widget<AppState>> {
             )),
             1.0,
         );
+        hist_col.add_flex_child(
+            build_histogram(&selected_image, state.selected_operation, state),
+            6.0,
+        );
+        histogram_row.add_flex_child(hist_col, 1.0);
     };
+
     col.add_flex_child(build_image_list(), 1.0);
     col.add_flex_child(build_operation_list(), 1.5);
     col.add_flex_child(image_row, 4.0);
-    col.add_flex_child(histogram_row, 2.0);
+    col.add_flex_child(histogram_row, 2.5);
     col.boxed()
 }
 
@@ -350,10 +371,14 @@ pub fn build_histogram_label(image: &DynamicImage) -> impl Widget<AppState> {
     label
 }
 
-pub fn build_histogram(image: &DynamicImage, state: &AppState) -> impl Widget<AppState> {
+pub fn build_histogram(
+    image: &DynamicImage,
+    op: Operation,
+    state: &AppState,
+) -> impl Widget<AppState> {
     let build_image = || {
         SizedBox::new(
-            apply_operation(image, state.selected_operation, &state)
+            apply_operation(image, op, &state)
                 .render_grayscale_histogram()
                 .to_druid_image()
                 .fill_mode(druid::widget::FillStrat::Fill),

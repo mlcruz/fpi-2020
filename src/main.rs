@@ -8,7 +8,7 @@ fn make_ui() -> impl Widget<AppState> {
 
 pub fn main() {
     let main_window = WindowDesc::new(|| make_ui())
-        .window_size((800., 600.))
+        .window_size((1280., 960.))
         .title("Fpi - 2020 - Matheus Leite Cruz");
 
     let state = AppState {
