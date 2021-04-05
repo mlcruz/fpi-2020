@@ -14,27 +14,40 @@ if not cap.isOpened():
 title = "Trabalho 3 - Sobel"
 cv.namedWindow(title)
 
-cv.createTrackbar("Dx", title , 0, 4, on_trackbar)
-cv.createTrackbar("Dy", title , 0, 4, on_trackbar)
-
-cv.setTrackbarPos("Dx", title, 1)
+cv.createTrackbar("Laplacian", title, 0, 1, on_trackbar)
+cv.createTrackbar("Gray", title, 0, 1, on_trackbar)
 
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 
-    dx = cv.getTrackbarPos("Dx", title)
-    dy = cv.getTrackbarPos("Dy", title)
+    gauss = cv.getTrackbarPos("Laplacian", title)
+    gray = cv.getTrackbarPos("Gray", title)
+
+    img = frame
+
+    if gray == 1:
+        img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+    if gauss > 0 and gauss % 2 == 1:
+        img = cv.Laplacian(img, cv.CV_64F, ksize=3)
+
+    grad_x = cv.Sobel(img, cv.CV_64F, 1, 0)
+    grad_y = cv.Sobel(img, cv.CV_64F, 0,1)
+    
+    abs_grad_x = cv.convertScaleAbs(grad_x)
+    abs_grad_y = cv.convertScaleAbs(grad_y)
+
+    sobel = cv.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
 
     # if frame is read correctly ret is True
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
     
-    canny = cv.Sobel(frame, cv.CV_64F, dx, dy, ksize=5)
 
     cv.imshow("Original", frame)
-    cv.imshow(title, canny)
+    cv.imshow(title, sobel)
 
     if cv.waitKey(1) == ord('q'):
         break
