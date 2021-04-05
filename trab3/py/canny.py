@@ -11,36 +11,29 @@ if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
-title = "Trabalho 3 - GaussianBlur"
+title = "Trabalho 3 - Canny"
 cv.namedWindow(title)
-cv.createTrackbar("Kernel size", title , 1, 21, on_trackbar)
+
+cv.createTrackbar("Min Val", title , 100, 500, on_trackbar)
+cv.createTrackbar("Max Val", title , 100, 500, on_trackbar)
 
 
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 
-
-    k_size = cv.getTrackbarPos("Kernel size", title)
-
-    fixed_size = k_size
-
-    if(fixed_size % 2 == 0):
-        fixed_size = fixed_size + 1
-        cv.setTrackbarPos("Kernel size", title, fixed_size)
-
-    print(fixed_size)
-
+    min_val = cv.getTrackbarPos("Min Val", title)
+    max_val = cv.getTrackbarPos("Max Val", title)
 
     # if frame is read correctly ret is True
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
     
-    blur = cv.GaussianBlur(frame,(fixed_size,fixed_size),0)
+    canny = cv.Canny(frame,min_val, max_val)
 
     cv.imshow("Original", frame)
-    cv.imshow(title, blur)
+    cv.imshow(title, canny)
 
     if cv.waitKey(1) == ord('q'):
         break
