@@ -16,6 +16,7 @@ cv.namedWindow(title)
 
 cv.createTrackbar("Brilho", title , 0, 256, on_trackbar)
 cv.createTrackbar("Contraste", title , 0, 100, on_trackbar)
+cv.createTrackbar("Negativo", title , 0, 1, on_trackbar)
 
 while True:
     # Capture frame-by-frame
@@ -23,6 +24,7 @@ while True:
 
     brilho = cv.getTrackbarPos("Brilho", title)
     contraste = cv.getTrackbarPos("Contraste", title)
+    negativo = cv.getTrackbarPos("Negativo", title)
 
     # if frame is read correctly ret is True
     if not ret:
@@ -30,6 +32,9 @@ while True:
         break
     
     scaled = cv.convertScaleAbs(frame, alpha=(1+ (contraste / 10.0)), beta=brilho)
+
+    if(negativo == 1):
+        scaled = cv.bitwise_not(scaled)
 
     cv.imshow("Original", frame)
     cv.imshow(title, scaled)
