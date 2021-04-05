@@ -14,14 +14,14 @@ if not cap.isOpened():
 title = "Trabalho 3 - Sobel"
 cv.namedWindow(title)
 
-cv.createTrackbar("Laplacian", title, 0, 1, on_trackbar)
+cv.createTrackbar("Gaussian", title, 0, 1, on_trackbar)
 cv.createTrackbar("Gray", title, 0, 1, on_trackbar)
 
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 
-    gauss = cv.getTrackbarPos("Laplacian", title)
+    gauss = cv.getTrackbarPos("Gaussian", title)
     gray = cv.getTrackbarPos("Gray", title)
 
     img = frame
@@ -30,7 +30,7 @@ while True:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
     if gauss > 0 and gauss % 2 == 1:
-        img = cv.Laplacian(img, cv.CV_64F, ksize=3)
+        img = cv.GaussianBlur(img, (3,3), 0)
 
     grad_x = cv.Sobel(img, cv.CV_64F, 1, 0)
     grad_y = cv.Sobel(img, cv.CV_64F, 0,1)
