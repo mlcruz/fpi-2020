@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
 
 cap = cv.VideoCapture(0)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
 
 cap = cv.VideoCapture(0)
 
@@ -36,8 +37,6 @@ while True:
     if(fixed_size % 2 == 0):
         fixed_size = fixed_size + 1
         cv.setTrackbarPos("Kernel size", title, fixed_size)
-
-    print(fixed_size)
 
 
     # if frame is read correctly ret is True

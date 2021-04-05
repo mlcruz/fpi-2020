@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
 
 cap = cv.VideoCapture(0)
 
@@ -15,14 +16,6 @@ if not cap.isOpened():
 
 title = "Trabalho 3 - Rotate"
 cv.namedWindow(title)
-
-if len(sys.argv) > 1:
-    ret, frame = cap.read()
-    height, width, _ = frame.shape
-    fourcc = cv.VideoWriter_fourcc(*"MJPG")
-    out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
-
-
 
 while True:
     # Capture frame-by-frame
@@ -39,9 +32,6 @@ while True:
 
     cv.imshow("Original", frame)
     cv.imshow(title, rotated)
-
-    if len(sys.argv) > 1:
-        out.write(rotated)
 
 
     if cv.waitKey(1) == ord("q"):

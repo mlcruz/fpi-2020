@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
 
 cap = cv.VideoCapture(0)
 
@@ -22,8 +23,8 @@ if not cap.isOpened():
 title = "Trabalho 3 - Brilho e contraste"
 cv.namedWindow(title)
 
-cv.createTrackbar("Brilho", title , 0, 256, on_trackbar)
-cv.createTrackbar("Contraste", title , 0, 100, on_trackbar)
+cv.createTrackbar("Brilho", title , -255, 255, on_trackbar)
+cv.createTrackbar("Contraste", title , -100, 100, on_trackbar)
 cv.createTrackbar("Negativo", title , 0, 1, on_trackbar)
 
 while True:

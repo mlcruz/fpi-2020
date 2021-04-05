@@ -1,6 +1,8 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
+
 
 cap = cv.VideoCapture(0)
 
@@ -9,8 +11,6 @@ if len(sys.argv) > 1:
     height, width, _ = frame.shape
     fourcc = cv.VideoWriter_fourcc(*"MJPG")
     out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
-
-
 
 def on_trackbar(val):
     None
@@ -64,4 +64,5 @@ while True:
 
 # When everything done, release the capture
 cap.release()
+out.release()
 cv.destroyAllWindows()
