@@ -1,11 +1,14 @@
 import numpy as np
 import cv2 as cv
 import math
+import sys
 
 cap = cv.VideoCapture(0)
 
+
 def on_trackbar(val):
     None
+
 
 if not cap.isOpened():
     print("Cannot open camera")
@@ -16,6 +19,14 @@ cv.namedWindow(title)
 
 cv.createTrackbar("Gaussian", title, 0, 1, on_trackbar)
 cv.createTrackbar("Gray", title, 0, 1, on_trackbar)
+
+
+if len(sys.argv) > 1:
+    ret, frame = cap.read()
+    height, width, _ = frame.shape
+    fourcc = cv.VideoWriter_fourcc(*"MJPG")
+    out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
+
 
 while True:
     # Capture frame-by-frame
@@ -30,11 +41,11 @@ while True:
         img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
     if gauss > 0 and gauss % 2 == 1:
-        img = cv.GaussianBlur(img, (3,3), 0)
+        img = cv.GaussianBlur(img, (3, 3), 0)
 
     grad_x = cv.Sobel(img, cv.CV_64F, 1, 0)
-    grad_y = cv.Sobel(img, cv.CV_64F, 0,1)
-    
+    grad_y = cv.Sobel(img, cv.CV_64F, 0, 1)
+
     abs_grad_x = cv.convertScaleAbs(grad_x)
     abs_grad_y = cv.convertScaleAbs(grad_y)
 
@@ -44,12 +55,14 @@ while True:
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
-    
 
     cv.imshow("Original", frame)
     cv.imshow(title, sobel)
 
-    if cv.waitKey(1) == ord('q'):
+    if len(sys.argv) > 1:
+        out.write(sobel)
+
+    if cv.waitKey(1) == ord("q"):
         break
 
 

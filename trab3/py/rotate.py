@@ -13,8 +13,16 @@ if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
-title = "Trabalho 3 - Resize"
+title = "Trabalho 3 - Rotate"
 cv.namedWindow(title)
+
+if len(sys.argv) > 1:
+    ret, frame = cap.read()
+    height, width, _ = frame.shape
+    fourcc = cv.VideoWriter_fourcc(*"MJPG")
+    out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
+
+
 
 while True:
     # Capture frame-by-frame
@@ -31,6 +39,10 @@ while True:
 
     cv.imshow("Original", frame)
     cv.imshow(title, rotated)
+
+    if len(sys.argv) > 1:
+        out.write(rotated)
+
 
     if cv.waitKey(1) == ord("q"):
         break

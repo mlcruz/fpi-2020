@@ -9,6 +9,13 @@ def on_trackbar(val):
     None
 
 
+if len(sys.argv) > 1:
+    ret, frame = cap.read()
+    height, width, _ = frame.shape
+    fourcc = cv.VideoWriter_fourcc(*"MJPG")
+    out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
+
+
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
@@ -27,6 +34,10 @@ while True:
 
     cv.imshow("Original", frame)
     cv.imshow(title, cv.flip(frame, 0))
+
+  if len(sys.argv) > 1:
+        out.write(cv.flip(frame, 0))
+
 
     if cv.waitKey(1) == ord("q"):
         break

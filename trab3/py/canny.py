@@ -4,6 +4,13 @@ import math
 
 cap = cv.VideoCapture(0)
 
+if len(sys.argv) > 1:
+    ret, frame = cap.read()
+    height, width, _ = frame.shape
+    fourcc = cv.VideoWriter_fourcc(*"MJPG")
+    out = cv.VideoWriter(sys.argv[1], fourcc, 20.0, (width, height))
+
+
 
 def on_trackbar(val):
     None
@@ -46,6 +53,10 @@ while True:
 
     cv.imshow("Original", frame)
     cv.imshow(title, canny)
+
+    if len(sys.argv) > 1:
+        out.write(canny)
+
 
     if cv.waitKey(1) == ord("q"):
         break
